@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽️ 대한민국 월드컵 스코어 내기 🇰🇷</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{ color-scheme: light; --bg:#f4f6fb; --card:#ffffff; --ink:#1a1f36; --sub:#5b6478; --line:#e6e9f0; --kr:#c8102e; --blue:#0b1f4d; --gold:#e8b923; --good:#1a9e5f; --soft:#eef1f8; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+.hero{background:linear-gradient(135deg,#0b1f4d,#173a8a);color:#fff;border-radius:18px;padding:26px 24px;position:relative;overflow:hidden}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-.3px}
+.hero p{color:#cdd7f2;margin-top:6px;font-size:14px}
+.hero .stripe{position:absolute;top:0;right:0;width:120px;height:100%;background:repeating-linear-gradient(45deg,rgba(200,16,46,.25) 0 12px,transparent 12px 24px)}
+.grid{display:grid;gap:16px;margin-top:18px}
+@media(min-width:760px){.two{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px}
+.card h2{font-size:16px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--kr)}
+.rule{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.rule:last-child{border-bottom:none}
+.pill{background:var(--soft);color:var(--blue);font-weight:800;border-radius:999px;padding:3px 11px;font-size:13px;white-space:nowrap}
+.bonus{color:var(--kr)}
+.sched{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sched:last-child{border-bottom:none}
+.sched .flag{font-size:22px}
+.sched .when{margin-left:auto;color:var(--sub);font-size:13px;text-align:right}
+.sched .res{font-weight:800;color:var(--blue)}
+.tag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--soft);color:var(--sub)}
+.tag.live{background:#ffe9ec;color:var(--kr)}
+.tag.done{background:#e6f6ee;color:var(--good)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:9px 8px;text-align:center;border-bottom:1px solid var(--line)}
+th{color:var(--sub);font-weight:700;font-size:12px}
+td.name{text-align:left;font-weight:700}
+.pt{font-weight:800;color:var(--blue)}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:12px;margin-bottom:8px;background:var(--soft)}
+.lb-row.first{background:linear-gradient(90deg,#fff7df,#fdeec0);border:1px solid var(--gold)}
+.lb-row.last{background:#fdeced;border:1px solid #f3c2c7}
+.lb-rank{font-size:18px;font-weight:800;width:34px;text-align:center}
+.lb-name{font-weight:800;font-size:15px}
+.lb-sub{font-size:12px;color:var(--sub)}
+.lb-pts{margin-left:auto;font-size:20px;font-weight:800;color:var(--blue)}
+.prize{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;font-size:14px}
+.prize.win{background:linear-gradient(90deg,#fff7df,#fdeec0)}
+.prize.lose{background:#fdeced}
+.prize .ic{font-size:26px}
+.note{font-size:12.5px;color:var(--sub);margin-top:10px}
+.live-btn{display:inline-flex;align-items:center;gap:8px;background:var(--kr);color:#fff;text-decoration:none;font-weight:800;padding:10px 16px;border-radius:10px;font-size:14px;margin-top:4px}
+.steps{counter-reset:s;list-style:none}
+.steps li{position:relative;padding:10px 0 10px 38px;border-bottom:1px dashed var(--line);font-size:14px}
+.steps li:last-child{border-bottom:none}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:9px;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+.foot{text-align:center;color:var(--sub);font-size:12px;margin-top:22px}
+.miss{color:#b0b6c4;font-style:italic}
+canvas{max-height:230px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="stripe"></div>
+    <h1>⚽️ 대한민국 월드컵 스코어 내기 🇰🇷</h1>
+    <p>한국 경기마다 최종 스코어를 예측 → 실제 결과와 비교해 점수 적립 → 최종 순위 결정!</p>
+    <p style="margin-top:10px;font-size:13px;color:#aebbe0">2026 FIFA 북중미 월드컵 · A조 · 점수판은 경기 종료 시마다 갱신됩니다</p>
+  </div>
+
+  <div class="grid two">
+    <!-- 규칙 -->
+    <div class="card">
+      <h2><span class="dot"></span>점수 배정 방식</h2>
+      <div class="rule"><span>🎯 정확한 스코어까지 적중</span><span class="pill">+5점</span></div>
+      <div class="rule"><span>📐 승·무·패 + 골득실차 적중</span><span class="pill">+3점</span></div>
+      <div class="rule"><span>✅ 승·무·패만 적중</span><span class="pill">+1점</span></div>
+      <div class="rule"><span>❌ 빗나감</span><span class="pill">0점</span></div>
+      <div class="rule"><span class="bonus">⭐ 근접왕 보너스 (실제와 가장 가까운 1명)</span><span class="pill bonus">+2점</span></div>
+      <div class="rule"><span>🏟️ 16강 이후 토너먼트 경기</span><span class="pill">점수 ×1.5</span></div>
+      <p class="note">근접왕 = (예측 한국 득점 − 실제) + (예측 상대 득점 − 실제)의 오차 합이 가장 작은 사람. 동률이면 공동 수상. 토너먼트는 90분 정규시간 스코어 기준으로 채점합니다.</p>
+    </div>
+
+    <!-- 일정 -->
+    <div class="card">
+      <h2><span class="dot"></span>한국 경기 일정 <span style="font-weight:600;color:var(--sub);font-size:12px">(KST)</span></h2>
+      <div id="schedule"></div>
+      <a class="live-btn" href="https://m.search.naver.com/search.naver?where=m&query=월드컵" target="_blank">🔴 실시간 스코어 보기 (네이버)</a>
+    </div>
+  </div>
+
+  <!-- 리더보드 -->
+  <div class="card" style="margin-top:16px">
+    <h2><span class="dot"></span>🏆 종합 순위</h2>
+    <div id="leaderboard"></div>
+    <canvas id="chart" style="margin-top:14px"></canvas>
+  </div>
+
+  <!-- 경기별 예측 & 결과 -->
+  <div class="card" style="margin-top:16px">
+    <h2><span class="dot"></span>경기별 예측 & 채점</h2>
+    <div id="matches"></div>
+  </div>
+
+  <!-- 상품 -->
+  <div class="card" style="margin-top:16px">
+    <h2><span class="dot"></span>🎁 상벌</h2>
+    <div class="prize win" style="margin-bottom:10px">
+      <span class="ic">👑</span>
+      <div><b>최종 1등</b><br>가을 골프 멤버 중 "누가 빠질지" 직접 지목할 수 있는 <b>파워</b> 획득!</div>
+    </div>
+    <div class="prize lose">
+      <span class="ic">🍖</span>
+      <div><b>최종 꼴등</b><br>가을 골프 당일 <b>전원 식사 대접</b> 🥲</div>
+    </div>
+  </div>
+
+  <!-- 진행 방식 -->
+  <div class="card" style="margin-top:16px">
+    <h2><span class="dot"></span>🗳️ 진행 방식</h2>
+    <ol class="steps">
+      <li><b>경기 전날~당일 킥오프 1시간 전</b>까지 전원이 최종 스코어를 예측해 제출 (예: 한국 2 : 1 체코)</li>
+      <li>킥오프 후에는 예측 <b>수정·추가 불가</b> (지각 제출 시 0점 처리)</li>
+      <li>경기 종료 직후 실제 결과를 입력 → 점수판 <b>자동 채점·갱신</b></li>
+      <li>3경기(+토너먼트) 누적 합산으로 <b>최종 순위 확정</b></li>
+    </ol>
+  </div>
+
+  <div class="foot">데이터 갱신: <span id="updated"></span> · 만든 사람: 민석</div>
+</div>
+
+<script>
+/* ============ 데이터 (이 부분만 고치면 점수판이 갱신됩니다) ============ */
+const MEMBERS = ["김재엽","신다지","김선호","김민석","이주원"];
+
+const MATCHES = [
+  { id:1, round:"조별리그 1차전", opp:"체코",   flag:"🇨🇿", krFlag:"🇰🇷", dt:"6/12(금) 11:00", weight:1, actual:null,
+    preds:{ "김선호":{kr:1,opp:1}, "김재엽":{kr:1,opp:2}, "이주원":{kr:0,opp:1}, "김민석":{kr:1,opp:0}, "신다지":{kr:1,opp:1} } },
+  { id:2, round:"조별리그 2차전", opp:"멕시코", flag:"🇲🇽", krFlag:"🇰🇷", dt:"6/19(금) 10:00", weight:1, actual:null,
+    preds:{} },
+  { id:3, round:"조별리그 3차전", opp:"남아공", flag:"🇿🇦", krFlag:"🇰🇷", dt:"6/25(목) 10:00", weight:1, actual:null,
+    preds:{} },
+];
+const LAST_UPDATED = "2026-06-12 · 1차전 예측 5명 등록 완료 (결과 대기)";
+/* ==================================================================== */
+
+const sign = n => n>0?1:(n<0?-1:0);
+
+function rubric(pred, actual){
+  if(!pred || !actual) return 0;
+  if(pred.kr===actual.kr && pred.opp===actual.opp) return 5;       // 정확 스코어
+  const pd = pred.kr-pred.opp, ad = actual.kr-actual.opp;
+  if(pd===ad) return 3;                                            // 승패무+득실차
+  if(sign(pd)===sign(ad)) return 1;                                // 승패무만
+  return 0;
+}
+function matchPoints(match){
+  // returns { name: {base, bonus, total} }
+  const out = {}; MEMBERS.forEach(m=>out[m]={base:0,bonus:0,total:0});
+  if(!match.actual) return out;
+  // base
+  MEMBERS.forEach(m=>{ out[m].base = rubric(match.preds[m], match.actual); });
+  // closeness bonus
+  let best=Infinity, winners=[];
+  MEMBERS.forEach(m=>{
+    const p=match.preds[m]; if(!p) return;
+    const err = Math.abs(p.kr-match.actual.kr)+Math.abs(p.opp-match.actual.opp);
+    if(err<best){best=err;winners=[m];} else if(err===best){winners.push(m);}
+  });
+  winners.forEach(m=>out[m].bonus=2);
+  // weight
+  MEMBERS.forEach(m=>{ out[m].total = Math.round((out[m].base+out[m].bonus)*match.weight); });
+  return out;
+}
+function totals(){
+  const t={}; MEMBERS.forEach(m=>t[m]=0);
+  MATCHES.forEach(mt=>{ const mp=matchPoints(mt); MEMBERS.forEach(m=>t[m]+=mp[m].total); });
+  return t;
+}
+
+/* ---- 일정 렌더 ---- */
+const now = new Date();
+function schedRow(m){
+  let tag='<span class="tag">예정</span>', res='';
+  if(m.actual){ tag='<span class="tag done">종료</span>'; res=`<span class="res">${m.actual.kr} : ${m.actual.opp}</span>`; }
+  return `<div class="sched">
+    <span class="flag">${m.krFlag}</span>
+    <div><b>대한민국 vs ${m.opp}</b> <span class="flag" style="font-size:16px">${m.flag}</span><br>
+    <span style="font-size:12px;color:var(--sub)">${m.round}</span></div>
+    <div class="when">${res||''} ${tag}<br>${m.dt}</div>
+  </div>`;
+}
+document.getElementById('schedule').innerHTML = MATCHES.map(schedRow).join('');
+
+/* ---- 리더보드 렌더 ---- */
+function renderLeaderboard(){
+  const t=totals();
+  const ranked=MEMBERS.map(m=>({m,p:t[m]})).sort((a,b)=>b.p-a.p);
+  const maxP=Math.max(1,...ranked.map(r=>r.p));
+  const minP=Math.min(...ranked.map(r=>r.p));
+  const allZero = maxP===0;
+  const medals=["🥇","🥈","🥉"];
+  let html='';
+  ranked.forEach((r,i)=>{
+    const isFirst = !allZero && r.p===maxP && i===0;
+    const isLast  = !allZero && r.p===minP && ranked.length>1;
+    const cls = isFirst?'first':(isLast?'last':'');
+    const badge = isFirst?'👑':(isLast?'🍖':(medals[i]||(i+1)));
+    html+=`<div class="lb-row ${cls}">
+      <div class="lb-rank">${badge}</div>
+      <div><div class="lb-name">${r.m}</div><div class="lb-sub">${i+1}위${isFirst?' · 지목 파워':''}${isLast?' · 식사 대접':''}</div></div>
+      <div class="lb-pts">${r.p}<span style="font-size:12px;color:var(--sub)"> 점</span></div>
+    </div>`;
+  });
+  document.getElementById('leaderboard').innerHTML = html;
+  // chart
+  const ctx=document.getElementById('chart');
+  new Chart(ctx,{type:'bar',data:{labels:ranked.map(r=>r.m),
+    datasets:[{label:'누적 점수',data:ranked.map(r=>r.p),
+      backgroundColor:ranked.map((r,i)=>i===0&&!allZero?'#e8b923':'#173a8a'),borderRadius:6}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+
+/* ---- 경기별 테이블 ---- */
+function renderMatches(){
+  let html='';
+  MATCHES.forEach(m=>{
+    const mp=matchPoints(m);
+    const hasPred = Object.keys(m.preds).length>0;
+    let head=`<div style="margin:14px 0 6px;font-weight:800">${m.krFlag} 대한민국 vs ${m.opp} ${m.flag} <span style="font-weight:600;color:var(--sub);font-size:12px">· ${m.round} · ${m.dt}`;
+    head += m.actual?` · 실제 <b style="color:var(--kr)">${m.actual.kr} : ${m.actual.opp}</b>`:` · <span class="miss">결과 대기</span>`;
+    head+='</span></div>';
+    let rows = MEMBERS.map(name=>{
+      const p=m.preds[name];
+      const predTxt = p? `${p.kr} : ${p.opp}` : '<span class="miss">미제출</span>';
+      const pt = m.actual? `<span class="pt">${mp[name].total}</span>${mp[name].bonus?' <span style="color:var(--kr);font-size:11px">⭐</span>':''}` : '–';
+      return `<tr><td class="name">${name}</td><td>${predTxt}</td><td>${pt}</td></tr>`;
+    }).join('');
+    html+=head+`<table><thead><tr><th style="text-align:left">팀원</th><th>예측 (한국:상대)</th><th>획득</th></tr></thead><tbody>${rows}</tbody></table>`;
+    if(!hasPred) html+=`<p class="note">아직 예측이 등록되지 않았습니다.</p>`;
+  });
+  document.getElementById('matches').innerHTML=html;
+}
+
+renderLeaderboard();
+renderMatches();
+document.getElementById('updated').textContent = LAST_UPDATED;
+</script>
+</body>
+</html>
