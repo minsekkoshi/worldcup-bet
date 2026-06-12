@@ -272,7 +272,7 @@ document.getElementById('schedule').innerHTML = MATCHES.map(m=>{
     const isFirst=!allZero && r.p===maxP && i===0;
     const isLast=!allZero && r.p===minP && ranked.length>1;
     const cls=isFirst?'first':(isLast?'last':'');
-    const tag=isFirst?'1위 · 지목 파워':(isLast?'최하위 · 식사 대접':`${i+1}위`);
+    const tag=isFirst?'1위':(isLast?'순위':`${i+1}위`);
     html+=`<div class="lb ${cls}">
       <div class="rk">${i+1}</div>
       <div><div class="nm">${r.m}</div><div class="tag">${tag}</div></div>
