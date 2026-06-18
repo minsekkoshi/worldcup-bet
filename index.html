@@ -147,9 +147,9 @@ canvas{max-height:240px;margin-top:18px}
       <div class="rule"><span class="t">승·무·패 + 골득실차 적중</span><span class="chip">+3점</span></div>
       <div class="rule"><span class="t">승·무·패만 적중</span><span class="chip">+1점</span></div>
       <div class="rule"><span class="t">빗나감</span><span class="chip">0점</span></div>
-      <div class="rule"><span class="t">근접왕 보너스 (실제와 가장 가까운 1명)</span><span class="chip g">+2점</span></div>
+      <div class="rule"><span class="t">근접 보너스 (승·무·패 적중자 중 최근접 1명)</span><span class="chip g">+1점</span></div>
       <div class="rule"><span class="t">16강 이후 토너먼트 경기</span><span class="chip g">점수 ×1.5</span></div>
-      <p class="muted" style="margin-top:14px">근접왕은 (예측 한국 득점 − 실제) + (예측 상대 득점 − 실제)의 오차 합이 가장 작은 사람입니다. 동률이면 공동 수상하며, 토너먼트는 90분 정규시간 스코어 기준으로 채점합니다.</p>
+      <p class="muted" style="margin-top:14px">근접 보너스는 승·무·패를 맞힌 사람들 중에서만, 실제 스코어와의 오차 합(|예측 한국 득점 − 실제| + |예측 상대 득점 − 실제|)이 가장 작은 1명에게 +1점을 줍니다. 승·무·패를 틀리면 받을 수 없고, 동률이면 공동 수상합니다. 토너먼트는 90분 정규시간 스코어 기준으로 채점합니다. (1차전 vs 체코는 규칙 변경 전 기준(근접 +2, 전원 대상)으로 채점된 점수를 그대로 유지합니다.)</p>
     </div>
   </section>
 
@@ -216,14 +216,14 @@ canvas{max-height:240px;margin-top:18px}
 const MEMBERS = ["김재엽","신다지","김선호","김민석","이주원"];
 
 const MATCHES = [
-  { id:1, round:"조별리그 1차전", opp:"체코",   flag:"🇨🇿", krFlag:"🇰🇷", dt:"6/12(금) 11:00", weight:1, actual:{kr:2,opp:1},
+  { id:1, round:"조별리그 1차전", opp:"체코",   flag:"🇨🇿", krFlag:"🇰🇷", dt:"6/12(금) 11:00", weight:1, bonusRule:"legacy", actual:{kr:2,opp:1},
     preds:{ "김선호":{kr:1,opp:1}, "김재엽":{kr:1,opp:2}, "이주원":{kr:0,opp:1}, "김민석":{kr:1,opp:0}, "신다지":{kr:1,opp:1} } },
   { id:2, round:"조별리그 2차전", opp:"멕시코", flag:"🇲🇽", krFlag:"🇰🇷", dt:"6/19(금) 10:00", weight:1, actual:null,
-    preds:{} },
+    preds:{ "김재엽":{kr:2,opp:1}, "김선호":{kr:1,opp:2}, "이주원":{kr:1,opp:2}, "신다지":{kr:1,opp:1}, "김민석":{kr:1,opp:3} } },
   { id:3, round:"조별리그 3차전", opp:"남아공", flag:"🇿🇦", krFlag:"🇰🇷", dt:"6/25(목) 10:00", weight:1, actual:null,
     preds:{} },
 ];
-const LAST_UPDATED = "2026-06-12 13:25 · 1차전(vs 체코) 결과 2:1 반영 완료";
+const LAST_UPDATED = "2026-06-18 · 2차전(vs 멕시코) 예측 5명 등록 완료 (결과 대기)";
 /* ==================================================================== */
 
 const sign = n => n>0?1:(n<0?-1:0);
@@ -239,11 +239,15 @@ function matchPoints(match){
   const out={}; MEMBERS.forEach(m=>out[m]={base:0,bonus:0,total:0});
   if(!match.actual) return out;
   MEMBERS.forEach(m=>{ out[m].base=rubric(match.preds[m],match.actual); });
+  const legacy = match.bonusRule==='legacy';
+  const bonusPts = legacy ? 2 : 1;
+  const ar=sign(match.actual.kr-match.actual.opp);
   let best=Infinity, winners=[];
   MEMBERS.forEach(m=>{ const p=match.preds[m]; if(!p) return;
+    if(!legacy && sign(p.kr-p.opp)!==ar) return;
     const err=Math.abs(p.kr-match.actual.kr)+Math.abs(p.opp-match.actual.opp);
     if(err<best){best=err;winners=[m];} else if(err===best){winners.push(m);} });
-  winners.forEach(m=>out[m].bonus=2);
+  winners.forEach(m=>out[m].bonus=bonusPts);
   MEMBERS.forEach(m=>{ out[m].total=Math.round((out[m].base+out[m].bonus)*match.weight); });
   return out;
 }
