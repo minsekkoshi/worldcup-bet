@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>네이버 AI 반응형 스펙 Hub</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#f2f4f6; --panel:#ffffff; --line:#e5e8eb; --line2:#f1f3f5;
+    --text:#202632; --sub:#6b7684; --muted:#8b95a1;
+    --brand:#0064ff; --brand-d:#0050cc; --brand-weak:#e8f0ff;
+    --chip:#f2f4f6; --shadow:0 1px 4px rgba(0,27,55,.06); --shadow-lg:0 8px 24px rgba(0,27,55,.10);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;
+    background:var(--bg); color:var(--text); overflow:hidden; -webkit-font-smoothing:antialiased; letter-spacing:-0.01em}
+  button{font-family:inherit; cursor:pointer}
+
+  /* ===== layout ===== */
+  .app{display:grid; grid-template-columns:248px 1fr 332px; grid-template-rows:auto 1fr; height:100vh}
+  .topbar{grid-column:1/4; height:56px; background:var(--panel); color:var(--text);
+    display:flex; align-items:center; gap:10px; padding:0 18px; border-bottom:1px solid var(--line); z-index:20}
+
+  /* ===== sidebar ===== */
+  .sidebar{grid-row:2/3; background:var(--panel); border-right:1px solid var(--line); padding:18px 12px; overflow:auto}
+  .brand{display:flex; align-items:center; gap:9px; padding:4px 8px 18px; font-weight:700; font-size:15px; letter-spacing:-0.02em}
+  .brand .logo{width:24px;height:24px;border-radius:7px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .search{position:relative; margin:0 4px 14px}
+  .search input{width:100%; padding:11px 12px 11px 34px; border:0; border-radius:12px; font-size:13.5px; background:var(--chip); color:var(--text)}
+  .search input::placeholder{color:var(--muted)}
+  .search input:focus{outline:2px solid var(--brand)}
+  .search svg{position:absolute; left:11px; top:11px; color:var(--muted)}
+  .nav-group{font-size:11px; color:var(--muted); font-weight:700; letter-spacing:.02em; padding:10px 10px 6px}
+  .nav-item{display:flex; align-items:center; gap:9px; padding:10px 10px; border-radius:11px; font-size:14px; color:var(--text); cursor:pointer; margin-bottom:1px}
+  .nav-item:hover{background:var(--chip)}
+  .nav-item.active{background:var(--brand-weak); color:var(--brand); font-weight:700}
+  .nav-item .cnt{margin-left:auto; font-size:11px; color:var(--muted)}
+  /* tree */
+  .nav-sec{display:flex; align-items:center; gap:8px; padding:10px 10px; border-radius:11px; cursor:pointer; user-select:none; margin-bottom:1px}
+  .nav-sec:hover{background:var(--chip)}
+  .nav-sec .tw{font-size:10px; color:var(--muted); transition:transform .16s; width:12px}
+  .nav-sec.collapsed .tw{transform:rotate(-90deg)}
+  .nav-sec .sec-t{font-size:14px; font-weight:700; color:var(--text); letter-spacing:-0.02em}
+  .nav-item .dot-b{width:5px; height:5px; border-radius:50%; background:#c4cad2; flex:none}
+  .nav-item.active .dot-b{background:var(--brand)}
+  .nav-item .it-t{font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .nav-item .upd{margin-left:auto; font-size:10px; font-weight:700; color:var(--brand); background:var(--brand-weak); padding:2px 7px; border-radius:20px; flex:none}
+
+  /* ===== center ===== */
+  .stage{grid-row:2/3; display:flex; flex-direction:column; min-width:0; overflow:hidden; background:var(--bg)}
+  .stage-head{display:flex; align-items:center; gap:10px; padding:18px 28px; background:var(--bg)}
+  .stage-title{font-size:22px; font-weight:800; letter-spacing:-0.03em}
+  .stage-sub{font-size:13px; color:var(--sub); margin-top:2px}
+  .vp-tabs{margin-left:auto; display:flex; background:var(--chip); border-radius:12px; padding:4px}
+  .vp-tab{border:0; background:transparent; padding:8px 18px; border-radius:9px; font-size:13.5px; font-weight:700; color:var(--sub)}
+  .vp-tab.active{background:#fff; color:var(--brand); box-shadow:var(--shadow)}
+
+  .stage-body{flex:1; overflow:auto; padding:8px 28px 28px}
+  .viewport-wrap{display:flex; justify-content:center; align-items:center; min-height:62vh}
+
+  /* device frame */
+  .frame-outer{position:relative}
+  .resize{position:absolute; background:transparent}
+  .resize.r{right:-7px; top:0; width:14px; height:100%; cursor:ew-resize}
+  .resize.b{bottom:-7px; left:0; height:14px; width:100%; cursor:ns-resize}
+  .resize.c{right:-9px; bottom:-9px; width:18px; height:18px; cursor:nwse-resize}
+  .resize.c::after{content:"";position:absolute;right:3px;bottom:3px;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted)}
+  .dim-badge{position:absolute; top:-30px; left:50%; transform:translateX(-50%); font-size:12px; font-weight:600; color:var(--sub); background:var(--panel); border:1px solid var(--line); padding:4px 12px; border-radius:20px; white-space:nowrap}
+
+  /* frame-less screen — stroke only, common to mobile & PC */
+  .device{position:relative; background:#fff; overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-lg)}
+  .screen[data-theme="dark"]{background:#17171c; color:#e8eaed; border-color:#2c2c34}
+  .scr{width:100%; height:100%; overflow:auto}
+
+  /* used components */
+  .used{margin-top:34px; padding-top:22px; border-top:1px solid var(--line)}
+  .used h3{font-size:14px; margin:0 0 14px; color:var(--text); font-weight:700; letter-spacing:-0.02em}
+  .comp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(176px,1fr)); gap:14px}
+  .comp{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px}
+  .comp .cprev{height:68px; border-radius:12px; background:var(--chip); display:grid; place-items:center; margin-bottom:11px}
+  .comp .cname{font-size:13px; font-weight:700}
+  .comp .ctag{font-size:11.5px; color:var(--muted); margin-top:3px}
+  .comp.hide{display:none}
+
+  /* ===== right inspector ===== */
+  .inspector{grid-row:2/3; background:var(--panel); border-left:1px solid var(--line); overflow:auto}
+  .insp-head{padding:18px 18px; border-bottom:1px solid var(--line2); font-size:15px; font-weight:800; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px}
+  .insp-head .run{width:8px;height:8px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px var(--brand-weak)}
+  .acc{border-bottom:1px solid var(--line2)}
+  .acc-head{display:flex; align-items:center; gap:8px; padding:15px 18px; cursor:pointer; user-select:none}
+  .acc-head .tw{transition:transform .18s; color:var(--muted); font-size:11px}
+  .acc.collapsed .tw{transform:rotate(-90deg)}
+  .acc-head .lbl{font-size:14px; font-weight:700; letter-spacing:-0.01em}
+  .acc-head .badge{margin-left:auto; font-size:11.5px; color:var(--brand); background:var(--brand-weak); padding:3px 11px; border-radius:20px; font-weight:700}
+  .acc-body{padding:2px 18px 18px}
+  .acc.collapsed .acc-body{display:none}
+
+  .seg{display:flex; flex-wrap:wrap; gap:7px}
+  .seg button{border:0; background:var(--chip); padding:9px 13px; border-radius:10px; font-size:12.5px; font-weight:600; color:var(--sub)}
+  .seg button.active{background:var(--brand); color:#fff; font-weight:700}
+  .seg button:disabled{opacity:.4; cursor:not-allowed}
+
+  .spec-row{display:flex; justify-content:space-between; font-size:13px; padding:9px 0; border-bottom:1px solid var(--line2)}
+  .spec-row:last-child{border-bottom:0}
+  .spec-row .k{color:var(--sub)} .spec-row .v{font-weight:700; font-variant-numeric:tabular-nums}
+  .token{display:flex; align-items:center; gap:9px; font-size:12.5px; padding:6px 0; color:var(--sub)}
+  .sw{width:18px;height:18px;border-radius:6px;border:1px solid rgba(0,0,0,.06)}
+  .note{font-size:12px; color:var(--muted); margin-top:9px; line-height:1.5}
+
+  /* ===== topbar controls (Toss light) ===== */
+  .tb-tag{font-size:12px; color:var(--sub); font-weight:600}
+  .tb-sel,.tb-num{background:var(--chip); color:var(--text); border:0; border-radius:10px; font-size:13px; padding:8px 10px; font-weight:600}
+  .tb-sel:focus,.tb-num:focus{outline:2px solid var(--brand)}
+  .tb-num{width:64px; text-align:center; font-variant-numeric:tabular-nums}
+  .tb-sel{padding-right:26px}
+  .tb-x{color:var(--muted); font-size:13px}
+  .tb-btn{background:var(--chip); color:var(--text); border:0; border-radius:10px; padding:8px 13px; font-size:13px; font-weight:600}
+  .tb-btn:hover{background:#e5e8eb}
+  .tb-div{width:1px;height:22px;background:var(--line);margin:0 6px}
+  .tb-spacer{flex:1}
+  .tb-title{font-size:15px;font-weight:800;letter-spacing:-0.02em;display:flex;align-items:center;gap:9px}
+  .tb-title .logo{width:24px;height:24px;border-radius:7px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800}
+  .tb-readout{font-size:13px;font-weight:700;color:var(--brand);background:var(--brand-weak);padding:6px 12px;border-radius:20px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar">
+    <span class="tb-title"><span class="logo">N</span>스펙 Hub</span>
+    <div class="tb-div"></div>
+    <span class="tb-tag">기기</span>
+    <select class="tb-sel" id="preset"></select>
+    <div class="tb-div"></div>
+    <input class="tb-num" id="inW" type="number"> <span class="tb-x">×</span> <input class="tb-num" id="inH" type="number">
+    <button class="tb-btn" id="rotate" title="가로/세로 전환">회전</button>
+    <div class="tb-div"></div>
+    <span class="tb-tag">배율</span>
+    <select class="tb-sel" id="scale">
+      <option value="fit">맞춤</option><option value="0.25">25%</option><option value="0.33">33%</option>
+      <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
+    </select>
+    <button class="tb-btn" id="reset">초기화</button>
+    <div class="tb-spacer"></div>
+    <span class="tb-readout" id="scaleReadout">100%</span>
+  </div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">N</span> AI 반응형 스펙</div>
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchInput" placeholder="컴포넌트 검색">
+    </div>
+    <div class="nav-group">도메인</div>
+    <div id="navList"></div>
+  </aside>
+
+  <!-- ===== CENTER STAGE ===== -->
+  <main class="stage">
+    <div class="stage-head">
+      <div>
+        <div class="stage-title" id="domTitle">홈 피드</div>
+        <div class="stage-sub" id="domSub">메인 화면 · 추천 콘텐츠 스트림</div>
+      </div>
+      <div class="vp-tabs">
+        <button class="vp-tab active" data-vp="mobile">Mobile</button>
+        <button class="vp-tab" data-vp="pc">PC</button>
+      </div>
+    </div>
+    <div class="stage-body">
+      <div class="viewport-wrap" id="viewportWrap"></div>
+      <div class="used">
+        <h3>이 화면에 활용된 컴포넌트</h3>
+        <div class="comp-grid" id="compGrid"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== RIGHT INSPECTOR ===== -->
+  <aside class="inspector">
+    <div class="insp-head"><span class="run"></span> 스펙 인스펙터</div>
+    <div id="accWrap"></div>
+  </aside>
+</div>
+
+<script>
+/* ====================== DATA ====================== */
+const DEVICES = {
+  mobile:[
+    {n:"iPhone 15 Pro", w:393, h:852},{n:"iPhone 15 Pro Max", w:430, h:932},
+    {n:"iPhone SE", w:375, h:667},{n:"Galaxy S24", w:360, h:780},
+    {n:"Galaxy Z Fold(접힘)", w:344, h:882},{n:"Pixel 8", w:412, h:915},
+  ],
+  pc:[
+    {n:"Full HD", w:1920, h:1080},{n:"MacBook Pro 14", w:1512, h:982},
+    {n:"MacBook Air 13", w:1280, h:800},{n:"QHD", w:2560, h:1440},
+    {n:"HD", w:1366, h:768},{n:"Laptop", w:1440, h:900},
+  ]
+};
+const DEFAULT = {mobile:{w:393,h:852}, pc:{w:1920,h:1080}};
+
+/* IA tree — sections > (subsections) > leaves. Leaves have id+kind. */
+const IA = [
+  {t:"Foundations", n:"1", kids:[
+    {id:"f-layout", t:"Layout", kind:"generic"},
+    {id:"f-structure", t:"Structure", kind:"generic"},
+    {id:"f-entry", t:"Entry", kind:"generic"},
+  ]},
+  {t:"Interface", n:"2", kids:[
+    {t:"Main & Input field", n:"2.1", kids:[
+      {id:"i-main", t:"Main", kind:"chat"},
+      {id:"i-ait", t:"Input Field in AIT", kind:"chat"},
+      {id:"i-aib", t:"Input Field in AIB", kind:"chat"},
+      {id:"i-toolbar", t:"In-App Toolbar", upd:"05.28", kind:"chat"},
+    ]},
+    {t:"GNB", n:"2.2", kids:[
+      {id:"g-header", t:"Header & Tab Navigation", upd:"04", kind:"feed"},
+      {id:"g-history", t:"History panel", kind:"list"},
+      {id:"g-setting", t:"Setting", upd:"06.24", kind:"list"},
+    ]},
+  ]},
+  {t:"Answer Field", n:"3", kids:[
+    {id:"a-found", t:"Foundations", kind:"chat"},
+    {id:"a-query", t:"Query bubble", upd:"03.31", kind:"chat"},
+    {id:"a-reason", t:"Reasoning", upd:"04.20", kind:"chat"},
+    {id:"a-typo", t:"Basic & Typography", kind:"chat"},
+    {id:"a-place", t:"Place", upd:"05.29", kind:"feed"},
+    {id:"a-shop", t:"Shopping", upd:"04.08", kind:"feed"},
+    {id:"a-media", t:"Media", kind:"feed"},
+    {id:"a-table", t:"Datatable", kind:"generic"},
+    {id:"a-code", t:"Code Block", kind:"generic"},
+    {id:"a-layer", t:"Layer viewer", kind:"generic"},
+    {id:"a-lens", t:"Lens", upd:"05.29", kind:"generic"},
+  ]},
+  {id:"source", t:"Source", n:"4", upd:"5.28", kind:"generic"},
+  {id:"footer", t:"Footer & Disclaimer", n:"7", upd:"5.29", kind:"generic"},
+  {id:"error", t:"Error", n:"8", upd:"04.23", kind:"generic"},
+  {id:"utility", t:"Utility", n:"9", upd:"06.19", kind:"generic"},
+  {id:"onboard", t:"Onboarding", n:"10", upd:"04.21", kind:"login"},
+  {id:"login", t:"Log In", n:"11", upd:"5.29", kind:"login"},
+];
+
+/* flatten leaves and build id -> {node, crumb} map */
+const LEAF = {};
+(function build(nodes, crumb){
+  nodes.forEach(nd=>{
+    if(nd.kids) build(nd.kids, [...crumb, nd.t]);
+    else LEAF[nd.id] = {...nd, crumb};
+  });
+})(IA, []);
+
+const COMPS_BY_KIND = {
+  chat:["ChatBubble","PromptInput","SuggestChip","Avatar","Toolbar"],
+  feed:["FeedCard","Carousel","Badge","CTAButton","Thumbnail"],
+  list:["ListRow","Toggle","Divider","SectionHeader","Stepper"],
+  login:["TextField","CTAButton","SNSButton","Checkbox","Logo"],
+  generic:["Container","Text","Divider","Button","Icon"],
+};
+
+const CASES = [
+  {id:"default", n:"기본"},{id:"empty", n:"빈 상태"},{id:"error", n:"에러"},{id:"overflow", n:"텍스트 오버플로우"}
+];
+const STATES = ["Default","Hover","Pressed","Disabled","Loading"];
+
+const TOKENS = [
+  {n:"primary", v:"#03c75a"},{n:"primary-dark", v:"#02b350"},{n:"text-strong", v:"#1f2329"},
+  {n:"text-sub", v:"#6b7280"},{n:"line", v:"#e5e7eb"},{n:"bg", v:"#f4f5f7"},
+];
+
+/* ====================== STATE ====================== */
+let S = {
+  domain:"i-main", vp:"mobile", w:DEFAULT.mobile.w, h:DEFAULT.mobile.h,
+  scale:"fit", state:"Default", case:"default", theme:"light"
+};
+const navCollapsed = {}; // section title -> collapsed?
+
+/* ====================== ELEMENTS ====================== */
+const $ = s=>document.querySelector(s);
+const navList=$("#navList"), compGrid=$("#compGrid"), accWrap=$("#accWrap"),
+  vpWrap=$("#viewportWrap"), presetSel=$("#preset"), inW=$("#inW"), inH=$("#inH"),
+  scaleSel=$("#scale"), scaleReadout=$("#scaleReadout");
+
+/* ====================== SIDEBAR ====================== */
+function updBadge(u){return u?`<span class="upd">${u} 업데이트</span>`:"";}
+function navMatch(node,q){ // does this node or any descendant match search?
+  if(!q) return true;
+  if(node.t.toLowerCase().includes(q)) return true;
+  return node.kids ? node.kids.some(k=>navMatch(k,q)) : false;
+}
+function renderNav(){
+  const q=($("#searchInput").value||"").toLowerCase();
+  navList.innerHTML="";
+  IA.forEach(node=>renderNode(node, 0, navList, q));
+}
+function renderNode(node, depth, parent, q){
+  if(!navMatch(node,q)) return;
+  if(node.kids){
+    const open = q ? true : !navCollapsed[node.t];
+    const head=document.createElement("div");
+    head.className="nav-sec"+(open?"":" collapsed");
+    head.style.paddingLeft=(10+depth*12)+"px";
+    head.innerHTML=`<span class="tw">▾</span><span class="sec-t">${node.n?node.n+". ":""}${node.t}</span>`;
+    head.onclick=()=>{navCollapsed[node.t]=open; renderNav();};
+    parent.appendChild(head);
+    if(open) node.kids.forEach(k=>renderNode(k, depth+1, parent, q));
+  } else {
+    const el=document.createElement("div");
+    el.className="nav-item"+(node.id===S.domain?" active":"");
+    el.style.paddingLeft=(14+depth*12)+"px";
+    el.innerHTML=`<span class="dot-b"></span><span class="it-t">${node.n?node.n+". ":""}${node.t}</span>${updBadge(node.upd)}`;
+    el.onclick=()=>{S.domain=node.id; renderNav(); renderStageHead(); render(); renderAcc();};
+    parent.appendChild(el);
+  }
+}
+function curDomain(){return LEAF[S.domain];}
+function curComps(){const d=curDomain(); return d.comps || COMPS_BY_KIND[d.kind||"generic"];}
+function renderStageHead(){
+  const d=curDomain();
+  $("#domTitle").textContent=d.t;
+  $("#domSub").textContent=(d.crumb||[]).join(" › ")+(d.upd?` · ${d.upd} 업데이트`:"");
+}
+
+/* ====================== PRESETS ====================== */
+function fillPresets(){
+  presetSel.innerHTML="";
+  DEVICES[S.vp].forEach((d,i)=>{
+    const o=document.createElement("option");
+    o.value=i; o.textContent=`${d.n} · ${d.w}×${d.h}`;
+    presetSel.appendChild(o);
+  });
+  // select matching current size
+  const idx=DEVICES[S.vp].findIndex(d=>d.w===S.w&&d.h===S.h);
+  presetSel.value=idx>=0?idx:0;
+}
+
+/* ====================== SCREEN CONTENT ====================== */
+function screenHTML(){
+  const leaf=curDomain(), kind=leaf.kind||"generic", c=S.case, dark=(S.theme==="dark"&&S.vp==="mobile");
+  const tc = dark? "#e8eaed":"#1f2329", sc=dark?"#9aa0a6":"#6b7280",
+    cardBg=dark?"#22252b":"#fff", line=dark?"#2c2f36":"#eef0f3", chip=dark?"#2a2d33":"#f1f3f5";
+  const big = S.vp==="pc";
+  const pad = big?"28px 40px":"16px 14px";
+  const head=(t)=>`<div style="font-weight:800;font-size:${big?22:17}px;color:${tc}">${t}</div>`;
+
+  const emptyBox = `<div style="text-align:center;color:${sc};padding:64px 0">
+    <div style="width:48px;height:48px;border-radius:14px;background:${chip};margin:0 auto 16px"></div>
+    <div style="font-size:14px;font-weight:600">표시할 항목이 없습니다</div></div>`;
+  const errorBox = `<div style="text-align:center;color:${sc};padding:64px 0">
+    <div style="width:48px;height:48px;border-radius:14px;background:#ffe9e9;color:#f04452;display:grid;place-items:center;font-weight:800;font-size:22px;margin:0 auto 16px">!</div>
+    <div style="font-size:14px;font-weight:600;color:${tc}">일시적인 오류가 발생했어요</div>
+    <button style="margin-top:16px;border:0;color:#fff;background:var(--brand);padding:10px 18px;border-radius:12px;font-weight:700;font-size:13px">다시 시도</button></div>`;
+
+  const longTxt = c==="overflow"
+    ? "네이버 AI가 추천하는 오늘의 콘텐츠와 맞춤 정보가 길게 이어지는 매우 긴 제목의 예시 텍스트입니다 줄바꿈과 말줄임 처리를 확인하세요"
+    : "네이버 AI 추천 콘텐츠";
+
+  function feedCards(){
+    if(c==="empty")return emptyBox; if(c==="error")return errorBox;
+    let out="";
+    for(let i=0;i<(big?6:4);i++){
+      out+=`<div style="background:${cardBg};border:1px solid ${line};border-radius:14px;padding:14px;margin-bottom:12px;display:flex;gap:12px">
+        <div style="width:${big?72:56}px;height:${big?72:56}px;border-radius:10px;background:${chip};flex:none"></div>
+        <div style="min-width:0">
+          <div style="font-weight:700;color:${tc};font-size:${big?15:13.5}px;${c==='overflow'?'':'white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${longTxt} ${i+1}</div>
+          <div style="color:${sc};font-size:12px;margin-top:5px">추천 · 3분 전</div>
+        </div></div>`;
+    }
+    return out;
+  }
+  function chatView(){
+    if(c==="empty")return emptyBox; if(c==="error")return errorBox;
+    return `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="background:var(--brand);color:#fff;padding:11px 14px;border-radius:16px 16px 4px 16px;max-width:75%;font-size:13.5px">오늘 서울 날씨 어때?</div></div>
+    <div style="display:flex;gap:9px;margin-bottom:12px">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;flex:none">N</div>
+      <div style="background:${cardBg};border:1px solid ${line};color:${tc};padding:11px 14px;border-radius:16px 16px 16px 4px;max-width:78%;font-size:13.5px">${c==='overflow'?longTxt:'오늘 서울은 맑고 최고 24도예요. 외출하기 좋은 날씨입니다.'}</div></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">
+      ${["주간 예보","미세먼지","주변 날씨"].map(t=>`<span style="border:1px solid ${line};color:${sc};font-size:12px;padding:7px 12px;border-radius:18px">${t}</span>`).join("")}
+    </div>`;
+  }
+  function listView(){
+    if(c==="empty")return emptyBox; if(c==="error")return errorBox;
+    return ["계정 정보","알림 설정","다크 모드","개인정보 보호","앱 정보"].map((t,i)=>`
+      <div style="display:flex;align-items:center;padding:15px 2px;border-bottom:1px solid ${line}">
+        <span style="color:${tc};font-size:14px">${t}</span>
+        <span style="margin-left:auto;width:40px;height:23px;border-radius:13px;background:${i%2?'var(--brand)':chip};position:relative">
+          <span style="position:absolute;top:2px;${i%2?'right:2px':'left:2px'};width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></span>
+      </div>`).join("");
+  }
+  function loginView(){
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:${big?420:520}px;gap:14px">
+      <div style="width:54px;height:54px;border-radius:14px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:900;font-size:26px">N</div>
+      <div style="font-weight:800;font-size:${big?22:18}px;color:${tc}">네이버 AI</div>
+      <input placeholder="아이디" style="width:${big?320:'82%'};padding:12px 14px;border:1px solid ${line};border-radius:10px;background:${cardBg};color:${tc}">
+      <input placeholder="비밀번호" type="password" style="width:${big?320:'82%'};padding:12px 14px;border:1px solid ${line};border-radius:10px;background:${cardBg};color:${tc}">
+      <button style="width:${big?320:'82%'};padding:13px;border:0;border-radius:10px;background:var(--brand);color:#fff;font-weight:800;font-size:14px">로그인</button>
+      ${c==='error'?`<div style="color:#e5484d;font-size:12.5px">아이디 또는 비밀번호를 확인해주세요</div>`:''}
+    </div>`;
+  }
+  function genericView(){
+    if(c==="empty")return emptyBox; if(c==="error")return errorBox;
+    const long = c==="overflow"?longTxt:"이 영역은 Figma 스펙 연동 시 실제 컴포넌트로 채워집니다.";
+    return `<div style="border:1.5px dashed ${line};border-radius:18px;padding:${big?'44px':'28px 18px'};text-align:center;color:${sc};background:${cardBg}">
+        <div style="width:44px;height:44px;border-radius:12px;background:${chip};margin:0 auto 14px"></div>
+        <div style="font-weight:700;color:${tc};font-size:${big?16:14}px;margin-bottom:6px">${leaf.t}</div>
+        <div style="font-size:12.5px;${c==='overflow'?'':'max-width:340px;margin:0 auto'}">${long}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(${big?3:2},1fr);gap:10px;margin-top:14px">
+        ${Array.from({length:big?6:4}).map(()=>`<div style="height:${big?90:70}px;border-radius:10px;background:${chip}"></div>`).join("")}
+      </div>`;
+  }
+
+  let body;
+  if(kind==="chat")body=chatView();
+  else if(kind==="list")body=listView();
+  else if(kind==="feed")body=feedCards();
+  else if(kind==="login")body=loginView();
+  else body=genericView();
+
+  if(kind==="login"){
+    return `<div class="scr" style="padding:${pad};background:${dark?'#16181d':'#fff'}">${body}</div>`;
+  }
+  return `<div class="scr" style="padding:${pad};background:${dark?'#16181d':'#fff'}">
+    ${head(leaf.t)}
+    <div style="height:14px"></div>
+    ${body}
+  </div>`;
+}
+
+/* ====================== RENDER VIEWPORT ====================== */
+function computeScale(){
+  if(S.scale!=="fit")return parseFloat(S.scale);
+  const wrap=vpWrap.getBoundingClientRect();
+  const availW=wrap.width-40, availH=$(".stage-body").getBoundingClientRect().height*0.66;
+  return Math.min(1, availW/S.w, availH/S.h);
+}
+function render(){
+  const sc=computeScale();
+  scaleReadout.textContent=Math.round(sc*100)+"%";
+  const dark=(S.theme==="dark"&&S.vp==="mobile");
+
+  // frame-less: a single stroked screen, common to mobile & PC
+  const radius = S.vp==='mobile' ? 28 : 14;
+  const inner=`<div class="screen device" data-theme="${dark?'dark':'light'}"
+      style="width:${S.w}px;height:${S.h}px;border-radius:${radius}px;transform:scale(${sc});transform-origin:top left">
+      ${screenHTML()}
+    </div>`;
+
+  const fw=S.w*sc, fh=S.h*sc;
+  vpWrap.innerHTML=`<div class="frame-outer" style="width:${fw}px;height:${fh}px">
+    <div class="dim-badge">${S.w} × ${S.h} · ${Math.round(sc*100)}%</div>
+    <div style="position:absolute;inset:0">${inner}</div>
+    <div class="resize r"></div><div class="resize b"></div><div class="resize c"></div>
+  </div>`;
+  bindResize();
+  renderComps();
+  inW.value=S.w; inH.value=S.h;
+}
+
+/* ====================== USED COMPONENTS ====================== */
+function renderComps(){
+  compGrid.innerHTML="";
+  curComps().forEach(name=>{
+    const el=document.createElement("div");
+    el.className="comp";
+    el.innerHTML=`<div class="cprev">${miniPrev(name)}</div><div class="cname">${name}</div><div class="ctag">${S.state} · ${curDomain().t}</div>`;
+    compGrid.appendChild(el);
+  });
+}
+function miniPrev(n){
+  if(/Button|CTA/.test(n))return `<span style="background:var(--brand);color:#fff;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700">버튼</span>`;
+  if(/Chip|Tab|Badge/.test(n))return `<span style="background:var(--chip);padding:5px 11px;border-radius:14px;font-size:11px">칩</span>`;
+  if(/Toggle/.test(n))return `<span style="width:34px;height:20px;border-radius:11px;background:var(--brand);display:inline-block"></span>`;
+  if(/Avatar/.test(n))return `<span style="width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800">N</span>`;
+  if(/Input|Search|Box|Bar/.test(n))return `<span style="width:80%;height:22px;border:1px solid var(--line);border-radius:7px;display:inline-block;background:#fff"></span>`;
+  return `<span style="width:78%;height:30px;background:#fff;border:1px solid var(--line);border-radius:7px;display:inline-block"></span>`;
+}
+
+/* ====================== RIGHT ACCORDION ====================== */
+function renderAcc(){
+  const blocks=[];
+  // States
+  blocks.push(accBlock("states","States",S.state,
+    `<div class="seg">${STATES.map(s=>`<button data-st="${s}" class="${s===S.state?'active':''}">${s}</button>`).join("")}</div>`));
+  // Cases
+  blocks.push(accBlock("cases","콘텐츠 케이스",CASES.find(c=>c.id===S.case).n,
+    `<div class="seg">${CASES.map(c=>`<button data-cs="${c.id}" class="${c.id===S.case?'active':''}">${c.n}</button>`).join("")}</div>`));
+  // Theme (mobile only)
+  if(S.vp==="mobile"){
+    blocks.push(accBlock("theme","테마",S.theme==="dark"?"Dark":"Light",
+      `<div class="seg"><button data-th="light" class="${S.theme==='light'?'active':''}">Light</button>
+       <button data-th="dark" class="${S.theme==='dark'?'active':''}">Dark</button></div>
+       <div class="note">다크모드는 Mobile에서만 지원됩니다.</div>`));
+  }
+  // Spec
+  const fw=S.vp==='mobile'?S.w+22:S.w;
+  blocks.push(accBlock("spec","스펙 정보","",`
+    <div class="spec-row"><span class="k">뷰포트</span><span class="v">${S.vp==='mobile'?'Mobile':'PC'}</span></div>
+    <div class="spec-row"><span class="k">해상도</span><span class="v">${S.w} × ${S.h}</span></div>
+    <div class="spec-row"><span class="k">프레임 폭</span><span class="v">${fw}px</span></div>
+    <div class="spec-row"><span class="k">배율</span><span class="v">${scaleReadout.textContent}</span></div>
+    <div class="spec-row"><span class="k">State</span><span class="v">${S.state}</span></div>
+    <div class="spec-row"><span class="k">케이스</span><span class="v">${CASES.find(c=>c.id===S.case).n}</span></div>`));
+  // Tokens
+  blocks.push(accBlock("tokens","디자인 토큰","",
+    TOKENS.map(t=>`<div class="token"><span class="sw" style="background:${t.v}"></span>--${t.n}<span style="margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums">${t.v}</span></div>`).join("")));
+
+  accWrap.innerHTML=blocks.join("");
+  bindAcc();
+}
+const collapsed={}; // persist open/close per session
+function accBlock(id,label,badge,body){
+  const isC=collapsed[id]?"collapsed":"";
+  return `<div class="acc ${isC}" data-acc="${id}">
+    <div class="acc-head"><span class="tw">▼</span><span class="lbl">${label}</span>${badge?`<span class="badge">${badge}</span>`:""}</div>
+    <div class="acc-body">${body}</div></div>`;
+}
+function bindAcc(){
+  accWrap.querySelectorAll(".acc-head").forEach(h=>{
+    h.onclick=e=>{
+      if(e.target.closest("button"))return;
+      const acc=h.parentElement, id=acc.dataset.acc;
+      collapsed[id]=!acc.classList.contains("collapsed");
+      acc.classList.toggle("collapsed");
+    };
+  });
+  accWrap.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{S.state=b.dataset.st; renderAcc(); renderComps();});
+  accWrap.querySelectorAll("[data-cs]").forEach(b=>b.onclick=()=>{S.case=b.dataset.cs; renderAcc(); render();});
+  accWrap.querySelectorAll("[data-th]").forEach(b=>b.onclick=()=>{S.theme=b.dataset.th; renderAcc(); render();});
+}
+
+/* ====================== DRAG RESIZE ====================== */
+function bindResize(){
+  const wrap=vpWrap.querySelector(".frame-outer");
+  if(!wrap)return;
+  const sc=()=>computeScale();
+  function start(axis){return e=>{
+    e.preventDefault();
+    const sx=e.clientX, sy=e.clientY, sw=S.w, sh=S.h, k=sc();
+    const badge=wrap.querySelector(".dim-badge");
+    function mv(ev){
+      if(axis.includes("w"))S.w=Math.max(240,Math.round(sw+(ev.clientX-sx)/k));
+      if(axis.includes("h"))S.h=Math.max(360,Math.round(sh+(ev.clientY-sy)/k));
+      badge.textContent=`${S.w} × ${S.h} · ${Math.round(k*100)}%`;
+      inW.value=S.w; inH.value=S.h;
+    }
+    function up(){document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up); syncPreset(); render(); renderAcc();}
+    document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);
+  };}
+  wrap.querySelector(".resize.r").addEventListener("mousedown",start("w"));
+  wrap.querySelector(".resize.b").addEventListener("mousedown",start("h"));
+  wrap.querySelector(".resize.c").addEventListener("mousedown",start("wh"));
+}
+function syncPreset(){
+  const idx=DEVICES[S.vp].findIndex(d=>d.w===S.w&&d.h===S.h);
+  presetSel.value=idx>=0?idx:"";
+}
+
+/* ====================== TOPBAR EVENTS ====================== */
+presetSel.onchange=()=>{const d=DEVICES[S.vp][presetSel.value]; if(d){S.w=d.w;S.h=d.h; render(); renderAcc();}};
+function applyNum(){S.w=Math.max(240,+inW.value||S.w); S.h=Math.max(360,+inH.value||S.h); syncPreset(); render(); renderAcc();}
+inW.onchange=applyNum; inH.onchange=applyNum;
+inW.onkeydown=e=>{if(e.key==="Enter")applyNum()}; inH.onkeydown=e=>{if(e.key==="Enter")applyNum()};
+$("#rotate").onclick=()=>{[S.w,S.h]=[S.h,S.w]; syncPreset(); render(); renderAcc();};
+scaleSel.onchange=()=>{S.scale=scaleSel.value; render();};
+$("#reset").onclick=()=>{const d=DEFAULT[S.vp]; S.w=d.w;S.h=d.h; S.scale="fit"; scaleSel.value="fit"; fillPresets(); render(); renderAcc();};
+
+/* viewport tabs */
+document.querySelectorAll(".vp-tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".vp-tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  S.vp=t.dataset.vp;
+  const d=DEFAULT[S.vp]; S.w=d.w; S.h=d.h;
+  if(S.vp==="pc")S.theme="light"; // dark only on mobile
+  fillPresets(); render(); renderAcc();
+});
+
+$("#searchInput").oninput=renderNav;
+window.addEventListener("resize",()=>{if(S.scale==="fit")render();});
+
+/* ====================== INIT ====================== */
+renderNav(); renderStageHead(); fillPresets(); render(); renderAcc();
+</script>
+</body>
+</html>
